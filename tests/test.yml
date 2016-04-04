@@ -1,0 +1,55 @@
+---
+
+- name: Test Dashboard
+  hosts: all
+
+  pre_tasks:
+    - name: Set fake SSH_AUTH_SOCK
+      set_fact:
+        ansible_env:
+          SSH_AUTH_SOCK: /tmp/fake_ssh_sock/123abc
+      tags:
+        - build
+        - configure
+
+    - name:
+      become: yes
+      file:
+        state: directory
+        path: /tmp/fake_ssh_sock
+      tags:
+        - build
+
+    - name:
+      become: yes
+      command: "touch {{ ansible_env.SSH_AUTH_SOCK }}"
+      args:
+        creates: "{{ ansible_env.SSH_AUTH_SOCK }}"
+      tags:
+        - build
+
+    - name: Update apt
+      become: yes
+      apt:
+        cache_valid_time: 1800
+        update_cache: yes
+      tags:
+        - build
+
+  roles:
+    - role: ansible-city.users_and_groups
+      users_and_groups:
+        users:
+          - name: test_user
+
+    - role: ansible-city.ssh_auth_sock
+      ssh_auth_sock:
+        user: test_user
+
+  post_tasks:
+    - name: check
+      become: yes
+      become_user: test_user
+      command: "ls -l {{ ansible_env.SSH_AUTH_SOCK | dirname }}"
+      tags:
+        - assert

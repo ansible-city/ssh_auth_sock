@@ -1,0 +1,25 @@
+---
+
+- name: Install dashboard required packages
+  become: yes
+  apt:
+    name: acl
+  tags:
+    - build
+
+- name: grant access for user to SSH socket
+  become: yes
+  # SSH-agent socket is forwarded for the current user only (0700 file). Let's change it
+  # See: http://serverfault.com/questions/107187/ssh-agent-forwarding-and-sudo-to-another-user
+  acl:
+    name: "{{ item }}"
+    etype: user
+    entity: "{{ ssh_auth_sock.user }}"
+    permissions: rwx
+    state: present
+  with_items:
+    - "{{ ansible_env.SSH_AUTH_SOCK | dirname }}"
+    - "{{ ansible_env.SSH_AUTH_SOCK }}"
+  when: ssh_auth_sock.enabled
+  tags:
+    - configure

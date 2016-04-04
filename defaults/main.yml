@@ -1,0 +1,4 @@
+---
+
+ssh_auth_sock:
+  enabled: yes
